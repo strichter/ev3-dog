@@ -9,3 +9,6 @@ We used two motors per leg, which means that we had to use two EV3 bricks to
 dirve them.
 
 We utilized the new pybricks-mircopython of ev3dev to implement the software.
+
+
+..image:: ./ev3-dog.png
