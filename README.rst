@@ -11,4 +11,5 @@ dirve them.
 We utilized the new pybricks-mircopython of ev3dev to implement the software.
 
 
-..image:: ./ev3-dog.png
+.. image:: ./ev3-dog.png
+        :alt: EV3 Robo Dog
