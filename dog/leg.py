@@ -1,3 +1,10 @@
+###############################################################################
+# SPDX-License-Identifier: MIT
+# Copyright 2020 by EV3 Robo Dog Authros
+###############################################################################
+"""Robo Dog Leg and Leg Set."""
+import math
+
 from pybricks import ev3devices, tools
 from pybricks.parameters import Direction, Port
 
@@ -32,6 +39,12 @@ class Leg:
     def disconnect(self):
         pass
 
+    def _get_speed_ratios(self, upper_target, lower_target):
+        upper_delta = math.fabs(upper_target - self.upper.angle())
+        lower_delta = math.fabs(lower_target - self.lower.angle())
+        ratio = upper_delta / lower_delta if lower_delta else 1.0
+        return (ratio, 1.0) if ratio < 1.0 else (1.0, ratio)
+
     def reset(self):
         self.upper.stop()
         self.upper.control.limits(actuation=constants.RESET_DUTY)
@@ -49,24 +62,24 @@ class Leg:
         self.lower.stop()
         self.lower.control.limits(actuation=100)
         # Reset angles, so that absolute angles can be used later.
+        self.upper.hold()
         self.upper.reset_angle(0)
+        self.lower.hold()
         self.lower.reset_angle(0)
 
     def stand_up(self, pct, speed=constants.DEFAULT_SPEED, wait=True):
         if not (0.0 <= pct <= 100.0):
             raise ValueError('Value out of range: %d%%' % pct)
         # Calculate the angles to bend to.
-        upper_angle = self.MAX_UPRIGHT_UPPER_ANGLE * pct/100
-        lower_angle = self.MAX_UPRIGHT_LOWER_ANGLE * pct/100
+        upper_target = self.MAX_UPRIGHT_UPPER_ANGLE * pct/100
+        lower_target = self.MAX_UPRIGHT_LOWER_ANGLE * pct/100
         # Setup a speed ratio, so that both finish at the same time.
-        if lower_angle:
-            ratio = upper_angle / lower_angle
-        else:
-            ratio = 1.0
+        upper_ratio, lower_ratio = self._get_speed_ratios(
+            upper_target, lower_target)
         # Implement our own wait() so we can run th etwo motors in the same
         # thread.
-        self.upper.run_target(speed*ratio, upper_angle, wait=False)
-        self.lower.run_target(speed, lower_angle, wait=False)
+        self.upper.run_target(speed*upper_ratio, upper_target, wait=False)
+        self.lower.run_target(speed*lower_ratio, lower_target, wait=False)
         if wait:
             while (not self.upper.control.done() or
                    not self.lower.control.done()):
@@ -171,7 +184,7 @@ class LegSet:
 
 
 class FrontLegSet(LegSet):
-    name = 'legs-front'
+    name = 'front-legs'
     LegFactory = FrontLeg
 
     RIGHT_UPPER_PORT = constants.FRONT_RIGHT_LEG_UPPER_PORT
@@ -181,7 +194,7 @@ class FrontLegSet(LegSet):
 
 
 class BackLegSet(LegSet):
-    name = 'legs-back'
+    name = 'back-legs'
     LegFactory = BackLeg
 
     RIGHT_UPPER_PORT = constants.BACK_RIGHT_LEG_UPPER_PORT
