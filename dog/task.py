@@ -1,3 +1,8 @@
+###############################################################################
+# SPDX-License-Identifier: MIT
+# Copyright 2020 by EV3 Robo Dog Authros
+###############################################################################
+"""Generic implementation of an async Task and TaskGroup (read thread)."""
 import _thread
 from pybricks import tools
 
