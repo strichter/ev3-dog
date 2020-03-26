@@ -1,3 +1,8 @@
+###############################################################################
+# SPDX-License-Identifier: MIT
+# Copyright 2020 by EV3 Robo Dog Authros
+###############################################################################
+"""System-specific constants defining various parameters and limits."""
 from pybricks.parameters import Direction, Port
 
 # Wait time in milliseconds inbetween busy loop iterations.
@@ -33,7 +38,7 @@ FRONT_LOWER_GEARS = [8, 40]
 
 # These angles have been carefully measured to provide a max upright position
 # while keep the robot stable. An angle of 0 degrees is the folded up position.
-FRONT_MAX_UPRIGHT_UPPER_ANGLE = 80
+FRONT_MAX_UPRIGHT_UPPER_ANGLE = 60
 FRONT_MAX_UPRIGHT_LOWER_ANGLE = 120
 
 # Those angles are relative to the max upright angles.
