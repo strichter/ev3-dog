@@ -1,4 +1,10 @@
+###############################################################################
+# SPDX-License-Identifier: MIT
+# Copyright 2020 by EV3 Robo Dog Authros
+###############################################################################
+"""Generic RPC Server and Client based on Bluetooth Mailbox."""
 import pickle
+import sys
 
 from pybricks import messaging, tools
 
@@ -13,6 +19,13 @@ def _getCallRepr(path, args, kw):
     kwStr = ', '.join('%s=%r' %(key, val) for key, val in kw.items())
     sigStr = ', '.join(filter(None, [argsStr, kwStr]))
     return '%s(%s)' %(path, sigStr)
+
+
+class ServerRpcError(Exception):
+
+    def __init__(self, error, status=400):
+        self.error = error
+        self.status = status
 
 
 class RemoteError(Exception):
@@ -38,13 +51,18 @@ class RemoteObject:
         return RemoteObject(self.path + '.' + name, self._client)
 
     def __call__(self, *args, **kw):
-        tools.print('Calling ' + _getCallRepr(self.path, args, kw))
+        # tools.print('Calling ' + _getCallRepr(self.path, args, kw))
         cmd = self._client.cmd_mbx.send((self.path, args, kw))
         self._client.res_mbx.wait()
         status, message, data = self._client.res_mbx.read()
-        if status >= 400:
+        if status >= 500:
             raise RemoteError(message, data)
+        if status >= 400:
+            data = '%s: %s' % (message, data)
         return data
+
+    def __repr__(self):
+        return RemoteObject('REPR', self._client)(self.path)
 
 
 class RemoteCall:
@@ -54,10 +72,14 @@ class RemoteCall:
         self.args = args or ()
         self.kw = kw or {}
 
-    def resolve(self, root):
+    def resolve(self, root, path=None):
+        path = path if path is not None else self.path
         obj = root
-        for name in self.path.split('.'):
-            obj = getattr(obj, name)
+        for name in path.split('.'):
+            try:
+                obj = getattr(obj, name)
+            except AttributeError as err:
+                raise ServerRpcError(err)
         return obj
 
     def call(self, root):
@@ -86,9 +108,12 @@ class RPCServer:
     def handle(self, call):
         # Handle system commands.
         if call.path == 'QUIT':
+            self.root.disconnect()
             return Quit
         if call.path == 'PING':
             return 'PONG'
+        if call.path == 'REPR':
+            return repr(call.resolve(self.root, call.args[0]))
         # Run the command regularly.
         return call.call(self.root)
 
@@ -103,15 +128,24 @@ class RPCServer:
         while True:
             tools.print('Waiting for connection.')
             self._server.wait_for_connection(1)
+            self.root.connect()
             tools.print('Connected.')
             res = None
             while res is not Quit:
                 call = self.wait()
                 try:
                     res = self.handle(call)
+                except ServerRpcError as err:
+                    self.res_mbx.send((
+                        err.status,
+                        err.error.__class__.__name__, str(err.error)))
                 except Exception as err:
-                    # XXX: Print traceback in console.
-                    self.res_mbx.send((400, err.__class__.__name__, str(err)))
+                    tools.print('-----')
+                    tools.print('Caught exception:')
+                    sys.print_exception(err)
+                    tools.print(err)
+                    tools.print('-----')
+                    self.res_mbx.send((500, err.__class__.__name__, str(err)))
                 else:
                     self.res_mbx.send((200, 'Ok', res))
 
