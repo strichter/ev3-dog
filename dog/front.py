@@ -1,22 +1,26 @@
-from pybricks.parameters import Direction
-
+###############################################################################
+# SPDX-License-Identifier: MIT
+# Copyright 2020 by EV3 Robo Dog Authros
+###############################################################################
+"""Robo Dog Front Brick."""
 import constants, leg, rpc
 
 
-class FrontBrick:
-
-    front = None
+class Front:
+    name = 'front'
 
     def __init__(self):
-        self.frontLegs = leg.FrontLegSet()
+        self.legs = leg.FrontLegSet()
 
     def connect(self):
-        self.frontLegs.connect()
+        self.legs.connect()
+
+    def disconnect(self):
+        self.legs.disconnect()
 
 
 def main():
-    fb = FrontBrick()
-    fb.connect()
+    fb = Front()
     server = rpc.RPCServer(fb)
     server.connect()
     server.run()

@@ -1,58 +1,75 @@
+###############################################################################
+# SPDX-License-Identifier: MIT
+# Copyright 2020 by EV3 Robo Dog Authros
+###############################################################################
+"""Main Robo Dog functionality."""
 from pybricks import ev3devices, hubs, messaging, parameters, tools
 from pybricks.media.ev3dev import SoundFile
 from pybricks.parameters import Direction, Port, Stop, Button
 
-import constants, leg, rpc, task
+import console, constants, leg, rpc, task
+
+
+class Back:
+    name = 'back'
+
+    def __init__(self):
+        self.legs = leg.BackLegSet()
+
+    def connect(self):
+        self.legs.connect()
+
+    def disconnect(self):
+        self.legs.disconnect()
 
 
 class Dog:
 
-    backLegs = None
-    frontLegs = None
+    back = None
+    front = None
 
     def __init__(self, front_brick_name):
         self.brick = hubs.EV3Brick()
-        self.frontBrick = rpc.RPCClient(front_brick_name)
-        self.backLegs = leg.BackLegSet()
-        self.frontLegs = self.frontBrick.frontLegs
+        self.front = rpc.RPCClient(front_brick_name)
+        self.back = Back()
 
     def connect(self):
-        self.frontBrick.connect()
-        self.backLegs.connect()
+        self.front.connect()
+        self.back.connect()
 
     def disconnect(self):
-        self.reset()
-        self.frontBrick.disconnect()
-        self.backLegs.disconnect()
+        self.stand_up(0)
+        self.front.disconnect()
+        self.back.disconnect()
 
     def bark(self):
         self.brick.speaker.play_file(SoundFile.DOG_BARK_1)
 
     def reset(self):
         reset_grp = task.TaskGroup()
-        reset_grp.add(self.frontLegs.reset)
-        reset_grp.add(self.backLegs.reset)
+        reset_grp.add(self.front.legs.reset)
+        reset_grp.add(self.back.legs.reset)
         reset_grp.start()
         reset_grp.join()
 
     def stand_up(self, pct, speed=constants.DEFAULT_SPEED, wait=True):
         bend_grp = task.TaskGroup()
-        bend_grp.add(self.frontLegs.stand_up, (pct, speed))
-        bend_grp.add(self.backLegs.stand_up, (pct, speed))
+        bend_grp.add(self.front.legs.stand_up, (pct, speed))
+        bend_grp.add(self.back.legs.stand_up, (pct, speed))
         bend_grp.start()
         bend_grp.join()
 
     def sit(self, speed=constants.DEFAULT_SPEED, wait=True):
         reset_grp = task.TaskGroup()
         # Front goes all the way up.
-        reset_grp.add(self.frontLegs.stand_up, (100.0, speed))
+        reset_grp.add(self.front.legs.stand_up, (100.0, speed))
         # Back goes all the way down.
-        reset_grp.add(self.backLegs.stand_up, (0.0, speed))
+        reset_grp.add(self.back.legs.stand_up, (0.0, speed))
         reset_grp.start()
         reset_grp.join()
 
     def lift_paw(self, side, pct, speed=constants.DEFAULT_SPEED, wait=True):
-        leg = getattr(self.frontLegs, side)
+        leg = getattr(self.front.legs, side)
         leg.lift_up(pct, speed, wait)
 
 
@@ -60,23 +77,23 @@ def main():
     dog = Dog('ev3-dog2')
     dog.connect()
     dog.reset()
-    dog.stand_up(100)
+    #dog.stand_up(100)
+    console.console({'dog': dog})
     #dog.sit()
     #dog.lift_paw('right', 100)
-    input('Done?')
     #dog.lift_paw('right', 0)
 
-    #dog.frontBrick.frontLegs.right.upper.stop()
-    #dog.frontBrick.frontLegs.right.lower.stop()
+    #dog.frontBrick.front.legs.right.upper.stop()
+    #dog.frontBrick.front.legs.right.lower.stop()
     #uprev = ucur = None
     #lprev = lcur = None
     #try:
     #    while True:
-    #        ucur = dog.frontBrick.frontLegs.right.upper.angle()
+    #        ucur = dog.frontBrick.front.legs.right.upper.angle()
     #        if ucur != uprev:
     #            print('upper', ucur)
     #            uprev = ucur
-    #        lcur = dog.frontBrick.frontLegs.right.lower.angle()
+    #        lcur = dog.frontBrick.front.legs.right.lower.angle()
     #        if lcur != lprev:
     #            print('lower', lcur)
     #            lprev = lcur
